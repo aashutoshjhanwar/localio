@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "LOCALIO",
+    "slug": "localio",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "localio",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.localio.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "LOCALIO uses your location to show listings & services near you.",
+        "NSPhotoLibraryUsageDescription": "LOCALIO needs photos to attach to your listings."
+      }
+    },
+    "android": {
+      "package": "com.localio.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "extra": {
+      "apiUrl": "http://172.20.10.2:4000"
+    },
+    "plugins": ["expo-secure-store", "expo-location", "expo-image-picker"]
+  }
+}

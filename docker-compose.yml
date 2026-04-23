@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: localio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: localio
+      POSTGRES_PASSWORD: localio
+      POSTGRES_DB: localio
+    ports:
+      - "5432:5432"
+    volumes:
+      - localio_pg:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: localio-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  localio_pg:
