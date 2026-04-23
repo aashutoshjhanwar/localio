@@ -879,6 +879,19 @@ export function ChatRoomScreen() {
           const fwdTag = parseMeta(item.metadata)?._forwarded ? (
             <Text style={[styles.fwdTag, mine && { color: '#FFE7DF' }]}>↪️ Forwarded</Text>
           ) : null;
+          const storyMeta = parseMeta(item.metadata);
+          const storyReplyChip = storyMeta?.storyReply ? (
+            <View style={[styles.storyReplyChip, mine && styles.storyReplyChipMine]}>
+              <Text style={[styles.storyReplyLabel, mine && { color: '#FFE7DF' }]} numberOfLines={1}>
+                ↪ Replied to {storyMeta.storyAuthorName ?? 'their'} story
+              </Text>
+              {storyMeta.storyBody ? (
+                <Text style={[styles.storyReplyBody, mine && { color: '#FFF' }]} numberOfLines={2}>
+                  {storyMeta.storyMediaUrl ? '📷 ' : ''}{storyMeta.storyBody}
+                </Text>
+              ) : null}
+            </View>
+          ) : null;
           const quoted = item.replyTo ? (
             <TouchableOpacity onPress={() => scrollToMessage(item.replyTo.id)} style={[styles.quote, mine && styles.quoteMine]}>
               <Text style={[styles.quoteName, mine && { color: '#FFE7DF' }]} numberOfLines={1}>
@@ -901,6 +914,7 @@ export function ChatRoomScreen() {
                   <View style={[styles.imageBubble, mine ? styles.imageMine : styles.imageTheirs]}>
                     {!mine && item.sender && <Text style={styles.senderName}>{item.sender.name}</Text>}
                     {fwdTag}
+                    {storyReplyChip}
                     {quoted}
                     <Image source={{ uri: item.mediaUrl }} style={styles.chatImage} />
                     {item.pending && <Text style={styles.status}>uploading…</Text>}
@@ -1542,6 +1556,14 @@ const styles = StyleSheet.create({
     borderRadius: 6, marginBottom: 4,
   },
   quoteMine: { backgroundColor: 'rgba(255,255,255,0.18)', borderLeftColor: '#FFE7DF' },
+  storyReplyChip: {
+    borderLeftWidth: 3, borderLeftColor: theme.colors.primary,
+    backgroundColor: 'rgba(255,90,60,0.08)', paddingHorizontal: 8, paddingVertical: 5,
+    borderRadius: 6, marginBottom: 4,
+  },
+  storyReplyChipMine: { backgroundColor: 'rgba(255,255,255,0.18)', borderLeftColor: '#FFE7DF' },
+  storyReplyLabel: { fontSize: 11, fontWeight: '800', color: theme.colors.primary },
+  storyReplyBody: { fontSize: 12, color: theme.colors.textMuted, marginTop: 1 },
   quoteName: { fontSize: 11, fontWeight: '800', color: theme.colors.accent },
   quoteBody: { fontSize: 12, color: theme.colors.textMuted, marginTop: 1 },
   replyPreview: {

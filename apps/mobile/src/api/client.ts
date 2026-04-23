@@ -200,6 +200,11 @@ export const Api = {
     ),
   markRead: (conversationId: string) =>
     api(`/api/chat/conversations/${conversationId}/read`, { method: 'POST' }),
+  sendMessage: (conversationId: string, body: { type?: 'text' | 'image' | 'offer' | 'location'; body: string; mediaUrl?: string; metadata?: any; replyToId?: string }) =>
+    api<{ message: any }>(`/api/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   chatUnread: () => api<{ unread: number }>('/api/chat/unread'),
   updateMessage: (messageId: string, patch: { metadata?: any; body?: string }) =>
     api<{ message: any }>(`/api/chat/messages/${messageId}`, {

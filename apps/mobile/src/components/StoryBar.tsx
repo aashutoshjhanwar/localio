@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, Alert, Pressable, Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
 import { Api } from '../api/client';
 import { theme } from '../theme';
 import { useAuth } from '../state/auth';
@@ -171,7 +172,10 @@ function StoryViewer({ groups, startIndex, meId, onClose, onDeleted }: {
 }) {
   const [gi, setGi] = useState(startIndex);
   const [si, setSi] = useState(0);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
   const viewedRef = useRef<Set<string>>(new Set());
+  const nav = useNavigation<any>();
   const group = groups[gi];
   const story = group?.stories[si];
 
@@ -191,6 +195,31 @@ function StoryViewer({ groups, startIndex, meId, onClose, onDeleted }: {
   function prev() {
     if (si > 0) setSi(si - 1);
     else if (gi > 0) { setGi(gi - 1); setSi(0); }
+  }
+
+  async function sendReply() {
+    if (!story || !group) return;
+    const body = replyText.trim();
+    if (!body) return;
+    setSending(true);
+    try {
+      const { conversation } = await Api.directChat(group.user.id);
+      await Api.sendMessage(conversation.id, {
+        body,
+        metadata: {
+          storyReply: true,
+          storyId: story.id,
+          storyBody: story.body,
+          storyMediaUrl: story.mediaUrl,
+          storyAuthorName: group.user.name,
+        },
+      });
+      setReplyText('');
+      onClose();
+      nav.navigate('ChatRoom', { conversationId: conversation.id, title: group.user.name });
+    } catch (e: any) {
+      Alert.alert('Could not send', e.message ?? 'try again');
+    } finally { setSending(false); }
   }
 
   async function remove() {
@@ -249,6 +278,25 @@ function StoryViewer({ groups, startIndex, meId, onClose, onDeleted }: {
           <Pressable style={[styles.navLeft, { width: w / 3 }]} onPress={prev} />
           <Pressable style={[styles.navRight, { width: w * 2 / 3 }]} onPress={next} />
         </View>
+        {!isMine && (
+          <View style={styles.replyBar}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder={`Reply to ${group.user.name}…`}
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              value={replyText}
+              onChangeText={setReplyText}
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[styles.replySend, (!replyText.trim() || sending) && { opacity: 0.5 }]}
+              onPress={sendReply}
+              disabled={!replyText.trim() || sending}
+            >
+              {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.replySendText}>Send</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </Modal>
   );
@@ -326,4 +374,18 @@ const styles = StyleSheet.create({
   caption: { color: '#fff', fontSize: 14 },
   navLeft: { position: 'absolute', left: 0, top: 0, bottom: 0 },
   navRight: { position: 'absolute', right: 0, top: 0, bottom: 0 },
+  replyBar: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
+    paddingVertical: 10, paddingBottom: 28, gap: 8, backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  replyInput: {
+    flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
+    color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', fontSize: 14,
+  },
+  replySend: {
+    backgroundColor: theme.colors.primary, paddingHorizontal: 18, paddingVertical: 10,
+    borderRadius: 22, alignItems: 'center', justifyContent: 'center', minWidth: 64,
+  },
+  replySendText: { color: '#fff', fontWeight: '800' },
 });
