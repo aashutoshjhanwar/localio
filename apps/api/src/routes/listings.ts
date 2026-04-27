@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/prisma.js';
 import { requireAuth, optionalAuth, type AuthedRequest } from '../middleware/auth.js';
-import { encodeGeohash, distanceKm, neighborGeohashes } from '../utils/geo.js';
+import { encodeGeohash, distanceKm, neighborGeohashes, geoBoxWhere } from '../utils/geo.js';
 import { blockedUserIds } from './blocks.js';
 import { notifySavedSearchMatches } from './savedSearches.js';
 import { pushToFollowers, pushToUser } from '../realtime/push.js';
@@ -89,7 +89,7 @@ listingRouter.get('/', optionalAuth, async (req: AuthedRequest, res, next) => {
       ];
     }
     if (lat !== undefined && lng !== undefined) {
-      where.geohash = { in: neighborGeohashes(encodeGeohash(lat, lng)) };
+      Object.assign(where, geoBoxWhere(lat, lng, radiusKm));
     }
     if (req.user) {
       const [blocked, hidden] = await Promise.all([

@@ -40,6 +40,8 @@ import { channelRouter } from './routes/channels.js';
 import { sosRouter } from './routes/sos.js';
 import { trustRouter } from './routes/trust.js';
 import { shieldRouter } from './routes/shield.js';
+import { autoReplyRouter } from './routes/autoReplies.js';
+import { shareRouter } from './routes/share.js';
 import { attachChatGateway } from './realtime/chatGateway.js';
 import { storage } from './storage/index.js';
 import path from 'path';
@@ -86,6 +88,8 @@ app.use('/api/channels', channelRouter);
 app.use('/api/sos', sosRouter);
 app.use('/api/trust', trustRouter);
 app.use('/api/shield', shieldRouter);
+app.use('/api/auto-replies', autoReplyRouter);
+app.use(shareRouter);
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.use(errorHandler);

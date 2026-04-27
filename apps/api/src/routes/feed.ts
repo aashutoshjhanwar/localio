@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../db/prisma.js';
-import { encodeGeohash, distanceKm, neighborGeohashes } from '../utils/geo.js';
+import { encodeGeohash, distanceKm, neighborGeohashes, geoBoxWhere } from '../utils/geo.js';
 import { optionalAuth, type AuthedRequest } from '../middleware/auth.js';
 import { blockedUserIds } from './blocks.js';
 
@@ -18,15 +18,14 @@ feedRouter.get('/', optionalAuth, async (req: AuthedRequest, res, next) => {
     // For wide scopes (city / country), skip geohash pre-filter so we can reach listings
     // anywhere — the distance filter below still clips to radiusKm.
     const skipGeoFilter = radiusKm >= 150;
-    const hashes = skipGeoFilter ? null : neighborGeohashes(encodeGeohash(lat, lng));
     const blocked = req.user ? await blockedUserIds(req.user.userId) : [];
     const excludeUsers = blocked.length ? { notIn: blocked } : undefined;
     const hidden = req.user
       ? (await prisma.hiddenListing.findMany({ where: { userId: req.user.userId }, select: { listingId: true } })).map((r) => r.listingId)
       : [];
 
-    const geoWhere = hashes ? { geohash: { in: hashes } } : {};
-    const take = skipGeoFilter ? 300 : 100;
+    const geoWhere = skipGeoFilter ? {} : geoBoxWhere(lat, lng, radiusKm);
+    const take = skipGeoFilter ? 300 : 200;
     const listingCutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000);
     const [listings, services] = await Promise.all([
       prisma.listing.findMany({

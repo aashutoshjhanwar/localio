@@ -3,6 +3,7 @@ import { verifyToken } from '../utils/jwt.js';
 import { prisma } from '../db/prisma.js';
 import { pushToUsers } from './push.js';
 import { assess } from '../services/scamShield.js';
+import { maybeFireAutoReply } from '../services/autoReplyEngine.js';
 
 interface AuthedSocket extends Socket {
   userId?: string;
@@ -119,6 +120,20 @@ export function attachChatGateway(io: Server) {
 
           io.to(`conv:${conversationId}`).emit('message:new', { ...msg, clientId });
           ack?.({ ok: true, message: msg, clientId });
+
+          // Auto-reply / ghost-hint engine — fires for buyer text in listing convs.
+          if (type === 'text') {
+            maybeFireAutoReply({ conversationId, buyerId: uid, buyerText: body })
+              .then((r) => {
+                if (r.greetingMessage) {
+                  io.to(`conv:${conversationId}`).emit('message:new', r.greetingMessage);
+                }
+                if (r.ghostHintMessage) {
+                  io.to(`conv:${conversationId}`).emit('message:new', r.ghostHintMessage);
+                }
+              })
+              .catch(() => { /* best-effort */ });
+          }
 
           // Push notify offline members
           prisma.conversationMember.findMany({

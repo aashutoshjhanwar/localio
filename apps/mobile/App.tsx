@@ -8,6 +8,7 @@ import { RootNav } from './src/nav/RootNav';
 import { theme } from './src/theme';
 import { attachPushListeners, navRef, registerPushToken } from './src/push';
 import { useI18n } from './src/i18n';
+import { useLocationOverride } from './src/state/location';
 import type { RootStackParamList } from './src/nav/RootNav';
 
 const linking: LinkingOptions<RootStackParamList> = {
@@ -27,8 +28,9 @@ const linking: LinkingOptions<RootStackParamList> = {
 export default function App() {
   const { hydrate, hydrating, token } = useAuth();
   const hydrateI18n = useI18n((s) => s.hydrate);
+  const hydrateLoc = useLocationOverride((s) => s.hydrate);
 
-  useEffect(() => { hydrate(); hydrateI18n(); }, [hydrate, hydrateI18n]);
+  useEffect(() => { hydrate(); hydrateI18n(); hydrateLoc(); }, [hydrate, hydrateI18n, hydrateLoc]);
   useEffect(() => {
     if (token) registerPushToken().catch(() => {});
   }, [token]);

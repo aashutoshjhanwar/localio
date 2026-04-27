@@ -32,6 +32,11 @@ export function requireAdmin(req: AuthedRequest, res: Response, next: NextFuncti
   }
 }
 
+export function isAdminPhone(phone: string): boolean {
+  const admins = (process.env.ADMIN_PHONES ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return !!phone && admins.includes(phone);
+}
+
 export function optionalAuth(req: AuthedRequest, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {

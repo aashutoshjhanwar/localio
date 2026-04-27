@@ -163,6 +163,12 @@ export const Api = {
     return api<{ services: any[] }>(`/api/services${qs ? '?' + qs : ''}`);
   },
   service: (id: string) => api<{ service: any }>(`/api/services/${id}`),
+  serviceCategoryCounts: (lat?: number, lng?: number, radiusKm = 25) => {
+    const q = lat != null ? `?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}` : '';
+    return api<{ counts: Record<string, number> }>(`/api/services/category-counts${q}`);
+  },
+  topRatedServices: (lat: number, lng: number, radiusKm = 25) =>
+    api<{ services: any[] }>(`/api/services/top-rated?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
   createService: (body: any) =>
     api<{ service: any }>('/api/services', { method: 'POST', body: JSON.stringify(body) }),
 
@@ -238,6 +244,14 @@ export const Api = {
   // societies
   nearbySocieties: (lat: number, lng: number, radiusKm = 5) =>
     api<{ societies: any[] }>(`/api/societies/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`),
+  searchSocieties: (q: string) =>
+    api<{ societies: any[] }>(`/api/societies/search?q=${encodeURIComponent(q)}`),
+  createSociety: (body: { name: string; city: string; pincode: string; address?: string; lat: number; lng: number }) =>
+    api<{ society: any; groupId?: string; duplicate?: boolean }>('/api/societies', { method: 'POST', body: JSON.stringify(body) }),
+  updateSociety: (id: string, body: Partial<{ name: string; city: string; pincode: string; address: string; lat: number; lng: number; verified: boolean }>) =>
+    api<{ society: any }>(`/api/societies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteSociety: (id: string) =>
+    api<{ ok: true }>(`/api/societies/${id}`, { method: 'DELETE' }),
   joinSociety: (id: string) =>
     api(`/api/societies/${id}/join`, { method: 'POST' }),
 
@@ -467,6 +481,16 @@ export const Api = {
       group: { id: string; name: string } | null;
       peer: { id: string; name: string | null } | null;
     }> }>(`/api/chat/search?q=${encodeURIComponent(q)}`),
+
+  // auto-replies
+  autoReplies: (listingId?: string) =>
+    api<{ replies: any[] }>(`/api/auto-replies${listingId ? '?listingId=' + encodeURIComponent(listingId) : ''}`),
+  upsertAutoReply: (body: {
+    id?: string; listingId?: string | null;
+    kind: 'greeting' | 'faq'; triggerText?: string | null;
+    response: string; enabled?: boolean; sortOrder?: number;
+  }) => api<{ reply: any }>('/api/auto-replies', { method: 'POST', body: JSON.stringify(body) }),
+  deleteAutoReply: (id: string) => api<{ ok: true }>(`/api/auto-replies/${id}`, { method: 'DELETE' }),
 
   // sos
   sendSos: (body: { lat: number; lng: number; body: string; category?: 'medical' | 'security' | 'fire' | 'other'; radiusKm?: number }) =>

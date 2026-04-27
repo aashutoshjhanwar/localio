@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
+import { useLocationOverride } from '../state/location';
 
 const FALLBACK = { lat: 28.4912, lng: 77.0896 };
 
@@ -71,9 +72,13 @@ export function useLocation() {
     return () => { watchRef.current?.remove(); watchRef.current = null; };
   }, [start]);
 
+  const override = useLocationOverride((s) => s.override);
+
   return {
-    coords: coords ?? FALLBACK,
-    label,
+    // When the user has manually picked a location, use that instead.
+    coords: override ? { lat: override.lat, lng: override.lng } : (coords ?? FALLBACK),
+    label: override ? override.label : label,
+    isOverridden: !!override,
     hasReal: coords !== null && !error,
     error,
     refreshing,

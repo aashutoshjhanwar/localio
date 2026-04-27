@@ -98,6 +98,13 @@ export function ProfileScreen() {
         </View>
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.card} onPress={() => nav.navigate('AutoReplySettings')}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.section}>🤖  Auto-reply (never ghost a buyer)</Text>
+          <Text style={{ color: theme.colors.textMuted }}>›</Text>
+        </View>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('SearchChats')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.section}>🔎  Search all chats</Text>

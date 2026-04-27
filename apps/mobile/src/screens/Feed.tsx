@@ -11,6 +11,8 @@ import { theme } from '../theme';
 import { TrustBadge } from '../components/TrustBadge';
 import { FilterSheet, DEFAULT_FILTERS, applyFilters, activeFilterCount, type FilterState } from '../components/FilterSheet';
 import { StoryBar } from '../components/StoryBar';
+import { LocationPicker } from '../components/LocationPicker';
+import { useLocationOverride } from '../state/location';
 import { useT } from '../i18n';
 import type { RootStackParamList } from '../nav/RootNav';
 
@@ -21,7 +23,9 @@ const SCOPE_RADIUS: Record<Exclude<Scope, 'nearby'>, number> = { city: 50, india
 
 export function FeedScreen() {
   const t = useT();
-  const { coords, label } = useLocation();
+  const { coords, label, isOverridden } = useLocation();
+  const clearOverride = useLocationOverride((s) => s.setOverride);
+  const [locPickerOpen, setLocPickerOpen] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [trending, setTrending] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,26 +115,24 @@ export function FeedScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <View style={styles.iconBar}>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Categories')}>
-          <Text style={{ fontSize: 20 }}>☰</Text>
+      {/* --- TOP: location selector (the OLX-killer move) --- */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.locPill} onPress={() => setLocPickerOpen(true)} activeOpacity={0.85}>
+          <Text style={styles.locPin}>📍</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.locKicker}>Showing items near</Text>
+            <Text style={styles.locLabel} numberOfLines={1}>
+              {label ?? 'Tap to choose location'}
+            </Text>
+          </View>
+          {isOverridden ? (
+            <TouchableOpacity onPress={() => clearOverride(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.locClear}>Use GPS</Text>
+            </TouchableOpacity>
+          ) : null}
+          <Text style={styles.locChev}>▾</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Events')}>
-          <Text style={{ fontSize: 20 }}>📅</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Posts')}>
-          <Text style={{ fontSize: 20 }}>💬</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Polls')}>
-          <Text style={{ fontSize: 20 }}>📊</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('MapView')}>
-          <Text style={{ fontSize: 20 }}>🗺</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Deals')}>
-          <Text style={{ fontSize: 20 }}>📉</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Inbox')}>
+        <TouchableOpacity style={styles.bellBtn} onPress={() => nav.navigate('Inbox')} activeOpacity={0.7}>
           <Text style={{ fontSize: 20 }}>🔔</Text>
           {unread > 0 && (
             <View style={styles.badge}>
@@ -138,6 +140,20 @@ export function FeedScreen() {
             </View>
           )}
         </TouchableOpacity>
+      </View>
+
+      {/* --- Real, prominent search bar (tap to open Search screen) --- */}
+      <TouchableOpacity style={styles.searchBarTop} onPress={() => nav.navigate('Search')} activeOpacity={0.8}>
+        <Text style={styles.searchIcon}>🔎</Text>
+        <Text style={styles.searchPh}>{t('search_placeholder')}</Text>
+      </TouchableOpacity>
+
+      {/* --- Quick actions: balanced 4-icon row, not the old 7-button mess --- */}
+      <View style={styles.quickRow}>
+        <QuickIcon emoji="🗂" label="Categories" onPress={() => nav.navigate('Categories')} />
+        <QuickIcon emoji="🗺" label="Map" onPress={() => nav.navigate('MapView')} />
+        <QuickIcon emoji="📉" label="Deals" onPress={() => nav.navigate('Deals')} />
+        <QuickIcon emoji="📅" label="Events" onPress={() => nav.navigate('Events')} />
       </View>
       {savedSearches.length > 0 && (
         <View style={styles.savedRow}>
@@ -193,35 +209,33 @@ export function FeedScreen() {
             ⚙︎ Filters{fCount > 0 ? ` · ${fCount}` : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.saveBtn} onPress={saveCurrentSearch}>
-          <Text style={styles.saveBtnText}>🔔 Save</Text>
+        <TouchableOpacity
+          style={[styles.scopeChip, scope === 'nearby' && styles.scopeChipActive]}
+          onPress={() => { setScope('nearby'); setSliderOpen((v) => scope === 'nearby' ? !v : true); }}
+        >
+          <Text style={[styles.scopeChipText, scope === 'nearby' && styles.scopeChipTextActive]}>
+            📍 {nearbyKm} km
+          </Text>
         </TouchableOpacity>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 12 }}>
-          <TouchableOpacity
-            style={[styles.scopeChip, scope === 'nearby' && styles.scopeChipActive]}
-            onPress={() => { setScope('nearby'); setSliderOpen((v) => scope === 'nearby' ? !v : true); }}
-          >
-            <Text style={[styles.scopeChipText, scope === 'nearby' && styles.scopeChipTextActive]}>
-              📍 {nearbyKm}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.scopeChip, scope === 'city' && styles.scopeChipActive]}
-            onPress={() => { setScope('city'); setSliderOpen(false); }}
-          >
-            <Text style={[styles.scopeChipText, scope === 'city' && styles.scopeChipTextActive]}>
-              🏙 {cityName}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.scopeChip, scope === 'india' && styles.scopeChipActive]}
-            onPress={() => { setScope('india'); setSliderOpen(false); }}
-          >
-            <Text style={[styles.scopeChipText, scope === 'india' && styles.scopeChipTextActive]}>
-              🇮🇳 India
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <TouchableOpacity
+          style={[styles.scopeChip, scope === 'city' && styles.scopeChipActive]}
+          onPress={() => { setScope('city'); setSliderOpen(false); }}
+        >
+          <Text style={[styles.scopeChipText, scope === 'city' && styles.scopeChipTextActive]}>
+            🏙 {cityName}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.scopeChip, scope === 'india' && styles.scopeChipActive]}
+          onPress={() => { setScope('india'); setSliderOpen(false); }}
+        >
+          <Text style={[styles.scopeChipText, scope === 'india' && styles.scopeChipTextActive]}>
+            🇮🇳
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.saveBtn} onPress={saveCurrentSearch}>
+          <Text style={styles.saveBtnText}>🔔</Text>
+        </TouchableOpacity>
       </View>
       {sliderOpen && scope === 'nearby' && (
         <View style={styles.sliderWrap}>
@@ -239,10 +253,6 @@ export function FeedScreen() {
           />
         </View>
       )}
-      <TouchableOpacity style={styles.searchBar} onPress={() => nav.navigate('Search')} activeOpacity={0.7}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <Text style={styles.searchPh}>{t('search_placeholder')}</Text>
-      </TouchableOpacity>
       {cats.length > 0 && (
         <ScrollView
           horizontal
@@ -358,7 +368,17 @@ export function FeedScreen() {
         value={filters}
         onApply={setFilters}
       />
+      <LocationPicker visible={locPickerOpen} onClose={() => setLocPickerOpen(false)} />
     </View>
+  );
+}
+
+function QuickIcon({ emoji, label, onPress }: { emoji: string; label: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.quickItem} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.quickIconWrap}><Text style={{ fontSize: 22 }}>{emoji}</Text></View>
+      <Text style={styles.quickLabel}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -426,12 +446,43 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   fabPlus: { color: '#fff', fontSize: 30, fontWeight: '800', marginTop: -2 },
-  iconBar: { flexDirection: 'row', gap: 10, paddingHorizontal: 12, paddingTop: 10, justifyContent: 'space-between' },
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 8, marginBottom: 4,
-    backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg,
-    paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: theme.colors.border,
+  // OLX-killer top bar: a fat location pill + a single bell.
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 12 },
+  locPill: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: theme.colors.card, borderRadius: theme.radius.lg,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: theme.colors.border, ...theme.shadow.sm,
   },
+  locPin: { fontSize: 22, marginRight: 10 },
+  locKicker: { color: theme.colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
+  locLabel: { color: theme.colors.text, fontSize: 16, fontWeight: '800', marginTop: 1 },
+  locClear: {
+    color: theme.colors.primary, fontSize: 12, fontWeight: '800',
+    backgroundColor: theme.colors.primarySoft, paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: theme.radius.pill, marginRight: 8,
+  },
+  locChev: { fontSize: 16, color: theme.colors.textMuted, marginLeft: 4 },
+
+  // Prominent search bar (its own row, fat tap-target).
+  searchBarTop: {
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 10,
+    backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg,
+    paddingHorizontal: 14, paddingVertical: 13, borderWidth: 1, borderColor: theme.colors.border,
+  },
+
+  // 4 balanced quick actions.
+  quickRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: 12, marginTop: 10,
+  },
+  quickItem: { flex: 1, alignItems: 'center' },
+  quickIconWrap: {
+    width: 50, height: 50, borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.primarySoft,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  quickLabel: { fontSize: 11, fontWeight: '700', color: theme.colors.text, marginTop: 6 },
   controlsRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingLeft: 12, paddingTop: 6, paddingBottom: 2,

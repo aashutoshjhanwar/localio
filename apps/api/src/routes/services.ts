@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/prisma.js';
 import { requireAuth, optionalAuth, type AuthedRequest } from '../middleware/auth.js';
-import { encodeGeohash, distanceKm, neighborGeohashes } from '../utils/geo.js';
+import { encodeGeohash, distanceKm, neighborGeohashes, geoBoxWhere } from '../utils/geo.js';
 import { blockedUserIds } from './blocks.js';
 import { notifySavedSearchMatches } from './savedSearches.js';
 import { pushToFollowers } from '../realtime/push.js';
@@ -53,7 +53,7 @@ serviceRouter.get('/', optionalAuth, async (req: AuthedRequest, res, next) => {
     if (category) where.category = category;
     if (q) where.OR = [{ title: { contains: q } }, { description: { contains: q } }];
     if (lat !== undefined && lng !== undefined) {
-      where.geohash = { in: neighborGeohashes(encodeGeohash(lat, lng)) };
+      Object.assign(where, geoBoxWhere(lat, lng, radiusKm));
     }
     if (req.user) {
       const blocked = await blockedUserIds(req.user.userId);
@@ -73,6 +73,62 @@ serviceRouter.get('/', optionalAuth, async (req: AuthedRequest, res, next) => {
         .map((s) => ({ ...s, distanceKm: distanceKm(lat, lng, s.lat, s.lng) }))
         .filter((s: any) => s.distanceKm <= radiusKm)
         .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
+    }
+    res.json({ services: out });
+  } catch (e) { next(e); }
+});
+
+// Counts of available services per category within a radius — used by the Services grid.
+serviceRouter.get('/category-counts', async (req, res, next) => {
+  try {
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
+    const radiusKm = parseFloat((req.query.radiusKm as string) ?? '25');
+    const where: any = { available: true };
+    if (lat !== undefined && lng !== undefined) Object.assign(where, geoBoxWhere(lat, lng, radiusKm));
+    const rows = await prisma.service.groupBy({
+      by: ['category'],
+      where,
+      _count: { _all: true },
+    });
+    // Refine: filter precisely with Haversine for accuracy when location given
+    if (lat !== undefined && lng !== undefined) {
+      const services = await prisma.service.findMany({
+        where, select: { category: true, lat: true, lng: true },
+      });
+      const counts: Record<string, number> = {};
+      for (const s of services) {
+        if (distanceKm(lat, lng, s.lat, s.lng) <= radiusKm) {
+          counts[s.category] = (counts[s.category] ?? 0) + 1;
+        }
+      }
+      return res.json({ counts });
+    }
+    const counts: Record<string, number> = {};
+    for (const r of rows) counts[r.category] = r._count._all;
+    res.json({ counts });
+  } catch (e) { next(e); }
+});
+
+// Top-rated providers (rail at top of Services screen)
+serviceRouter.get('/top-rated', async (req, res, next) => {
+  try {
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
+    const radiusKm = parseFloat((req.query.radiusKm as string) ?? '25');
+    const where: any = { available: true, ratingCount: { gte: 3 } };
+    if (lat !== undefined && lng !== undefined) Object.assign(where, geoBoxWhere(lat, lng, radiusKm));
+    const items = await prisma.service.findMany({
+      where, take: 50,
+      orderBy: [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }],
+      include: { provider: { select: { id: true, name: true, avatarUrl: true, trustScore: true, kycVerified: true } } },
+    });
+    let out: any[] = items;
+    if (lat !== undefined && lng !== undefined) {
+      out = items
+        .map((s) => ({ ...s, distanceKm: distanceKm(lat, lng, s.lat, s.lng) }))
+        .filter((s: any) => s.distanceKm <= radiusKm)
+        .slice(0, 12);
     }
     res.json({ services: out });
   } catch (e) { next(e); }

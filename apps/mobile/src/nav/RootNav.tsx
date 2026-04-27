@@ -56,6 +56,8 @@ import { GroupMembersScreen } from '../screens/GroupMembers';
 import { SosScreen } from '../screens/Sos';
 import { SearchChatsScreen } from '../screens/SearchChats';
 import { MyTrustScreen } from '../screens/MyTrust';
+import { AutoReplySettingsScreen } from '../screens/AutoReplySettings';
+import { CreateSocietyScreen } from '../screens/CreateSociety';
 import { theme } from '../theme';
 import { useT } from '../i18n';
 
@@ -107,6 +109,8 @@ export type RootStackParamList = {
   Sos: { groupId?: string } | undefined;
   SearchChats: undefined;
   MyTrust: undefined;
+  AutoReplySettings: undefined;
+  CreateSociety: undefined;
   Login: undefined;
 };
 
@@ -213,6 +217,8 @@ export function RootNav() {
           <Stack.Screen name="Sos" component={SosScreen} options={{ title: 'Send SOS', headerTintColor: '#DC2626' }} />
           <Stack.Screen name="SearchChats" component={SearchChatsScreen} options={{ title: 'Search all chats' }} />
           <Stack.Screen name="MyTrust" component={MyTrustScreen} options={{ title: 'Trust score' }} />
+          <Stack.Screen name="AutoReplySettings" component={AutoReplySettingsScreen} options={{ title: 'Auto-reply' }} />
+          <Stack.Screen name="CreateSociety" component={CreateSocietyScreen} options={{ title: 'Create society' }} />
           <Stack.Screen name="CreateListing" component={CreateListingScreen} options={{ title: 'Sell something' }} />
           <Stack.Screen name="CreateService" component={CreateServiceScreen} options={{ title: 'Offer a service' }} />
           <Stack.Screen

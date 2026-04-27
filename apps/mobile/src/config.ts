@@ -11,3 +11,13 @@ function resolveApiUrl(): string {
 }
 
 export const API_URL = resolveApiUrl();
+
+// Public-facing base URL used for share links (WhatsApp / iMessage previews).
+// Falls back to API_URL in dev so you can test the unfurl pipeline locally.
+function resolvePublicUrl(): string {
+  const fromExtra = (Constants.expoConfig?.extra as any)?.publicUrl as string | undefined;
+  if (fromExtra) return fromExtra;
+  return API_URL;
+}
+export const PUBLIC_URL = resolvePublicUrl();
+
