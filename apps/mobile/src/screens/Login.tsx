@@ -7,8 +7,10 @@ import { Api } from '../api/client';
 import { useAuth } from '../state/auth';
 import { registerPushToken } from '../push';
 import { theme } from '../theme';
+import { useT } from '../i18n';
 
 export function LoginScreen() {
+  const t = useT();
   const [phone, setPhone] = useState('+91');
   const [code, setCode] = useState('');
   const [referral, setReferral] = useState('');
@@ -47,28 +49,28 @@ export function LoginScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.wrap}>
         <View style={styles.hero}>
           <Text style={styles.logo}>LOCALIO</Text>
-          <Text style={styles.tagline}>Your neighborhood, in one app.</Text>
+          <Text style={styles.tagline}>{t('login_tagline')}</Text>
         </View>
 
         {step === 'phone' ? (
           <>
-            <Text style={styles.label}>Mobile number</Text>
+            <Text style={styles.label}>{t('login_phone_label')}</Text>
             <TextInput
               style={styles.input}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
-              placeholder="+91 98xxx xxxxx"
+              placeholder={t('login_phone_placeholder')}
               placeholderTextColor={theme.colors.textMuted}
               autoFocus
             />
             <TouchableOpacity style={styles.btn} onPress={sendOtp} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Send OTP</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('login_send_otp')}</Text>}
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <Text style={styles.label}>6-digit OTP (dev: 123456)</Text>
+            <Text style={styles.label}>{t('login_otp_label')}</Text>
             <TextInput
               style={styles.input}
               keyboardType="number-pad"
@@ -79,7 +81,7 @@ export function LoginScreen() {
               placeholder="••••••"
               placeholderTextColor={theme.colors.textMuted}
             />
-            <Text style={[styles.label, { marginTop: 18 }]}>Referral code (optional)</Text>
+            <Text style={[styles.label, { marginTop: 18 }]}>{t('login_referral')}</Text>
             <TextInput
               style={styles.input}
               value={referral}
@@ -90,15 +92,15 @@ export function LoginScreen() {
               placeholderTextColor={theme.colors.textMuted}
             />
             <TouchableOpacity style={styles.btn} onPress={verify} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Verify & Continue</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('login_verify')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setStep('phone')}>
-              <Text style={styles.linkMuted}>Change number</Text>
+              <Text style={styles.linkMuted}>{t('login_change_number')}</Text>
             </TouchableOpacity>
           </>
         )}
 
-        <Text style={styles.footer}>By continuing, you agree to our Terms & Privacy.</Text>
+        <Text style={styles.footer}>{t('login_terms')}</Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

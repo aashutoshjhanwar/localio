@@ -216,6 +216,58 @@ chatRouter.get('/conversations/:id/messages', requireAuth, async (req: AuthedReq
 });
 
 // Search text within a conversation
+// Global search — across ALL my conversations, groups and channels.
+// Something WhatsApp still cannot do in 2026.
+chatRouter.get('/search', requireAuth, async (req: AuthedRequest, res, next) => {
+  try {
+    const me = req.user!.userId;
+    const q = ((req.query.q as string) ?? '').trim();
+    if (q.length < 2) return res.json({ results: [] });
+
+    const myConvs = await prisma.conversationMember.findMany({
+      where: { userId: me }, select: { conversationId: true },
+    });
+    const convIds = myConvs.map((c) => c.conversationId);
+    if (convIds.length === 0) return res.json({ results: [] });
+
+    const messages = await prisma.message.findMany({
+      where: {
+        conversationId: { in: convIds },
+        deletedAt: null,
+        body: { contains: q },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        sender: { select: { id: true, name: true, avatarUrl: true } },
+        conversation: {
+          select: {
+            id: true, type: true, listingId: true,
+            group: { select: { id: true, name: true } },
+            channel: { select: { id: true, name: true, emoji: true, groupId: true } },
+            members: { where: { userId: { not: me } }, take: 1, include: { user: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+    });
+
+    const results = messages.map((m) => ({
+      messageId: m.id,
+      body: m.body,
+      type: m.type,
+      createdAt: m.createdAt,
+      sender: m.sender,
+      conversationId: m.conversationId,
+      conversationType: m.conversation.type,
+      channel: m.conversation.channel,
+      group: m.conversation.group,
+      peer: m.conversation.members[0]?.user ?? null,
+    }));
+
+    res.json({ results });
+  } catch (e) { next(e); }
+});
+
 chatRouter.get('/conversations/:id/search', requireAuth, async (req: AuthedRequest, res, next) => {
   try {
     const me = req.user!.userId;

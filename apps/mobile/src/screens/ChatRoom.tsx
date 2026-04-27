@@ -15,6 +15,7 @@ import { theme } from '../theme';
 import { OfferCard } from '../components/OfferCard';
 import { LocationShareModal } from '../components/LocationShareModal';
 import { RatingModal } from '../components/RatingModal';
+import { ScamShieldBanner } from '../components/ScamShieldBanner';
 import { loadCachedMessages, saveCachedMessages } from '../api/chatCache';
 import type { RootStackParamList } from '../nav/RootNav';
 
@@ -950,6 +951,13 @@ export function ChatRoomScreen() {
                 </View>
               </TouchableOpacity>
               {reactionsRow}
+              {(() => {
+                const shield = parseMeta(item.metadata)?.shield;
+                if (!mine && shield && shield.risk && shield.risk !== 'clean') {
+                  return <ScamShieldBanner shield={shield} />;
+                }
+                return null;
+              })()}
             </View>
           );
         }}

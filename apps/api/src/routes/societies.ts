@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db/prisma.js';
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js';
 import { encodeGeohash, distanceKm, neighborGeohashes } from '../utils/geo.js';
+import { ensureSocietyGroup, joinAllChannels } from '../services/groupChannels.js';
 
 export const societyRouter = Router();
 
@@ -70,6 +71,8 @@ societyRouter.post('/:id/join', requireAuth, async (req: AuthedRequest, res, nex
       where: { id: society.id },
       data: { memberCount: { increment: 1 } },
     });
-    res.json({ ok: true });
+    const groupId = await ensureSocietyGroup(society.id);
+    await joinAllChannels(groupId, req.user!.userId, 'member');
+    res.json({ ok: true, groupId });
   } catch (e) { next(e); }
 });

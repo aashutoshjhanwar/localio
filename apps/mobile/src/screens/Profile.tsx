@@ -76,38 +76,66 @@ export function ProfileScreen() {
             {uploading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontSize: 14 }}>📷</Text>}
           </View>
         </TouchableOpacity>
-        <Text style={styles.name}>{name || 'Set your name'}</Text>
+        <Text style={styles.name}>{name || t('set_your_name')}</Text>
         <Text style={styles.phone}>{user?.phone}</Text>
-        {user?.kycVerified && <Text style={styles.verified}>✓ KYC verified</Text>}
+        {user?.kycVerified && <Text style={styles.verified}>{t('kyc_verified')}</Text>}
       </View>
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('JoinSociety')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.section}>Your neighbourhood</Text>
-            <Text style={styles.value}>{society ? `${society.name}, ${society.city}` : 'Not set — tap to join one near you'}</Text>
+            <Text style={styles.section}>{t('your_neighbourhood')}</Text>
+            <Text style={styles.value}>{society ? `${society.name}, ${society.city}` : t('not_set_tap_to_join')}</Text>
           </View>
+          <Text style={{ color: theme.colors.textMuted }}>›</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.card} onPress={() => nav.navigate('MyTrust')}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.section}>🏆  Trust score & badges</Text>
+          <Text style={{ color: theme.colors.textMuted }}>›</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.card} onPress={() => nav.navigate('SearchChats')}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.section}>🔎  Search all chats</Text>
+          <Text style={{ color: theme.colors.textMuted }}>›</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Groups')}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.section}>{t('my_groups_menu')}</Text>
+          <Text style={{ color: theme.colors.textMuted }}>›</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Sos')}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.section, { color: theme.colors.danger }]}>{t('sos_menu')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('MyItems')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.section}>📋  My posts</Text>
+          <Text style={styles.section}>{t('my_posts')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('CreateService')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.section}>🛠️  Offer a service</Text>
+          <Text style={styles.section}>{t('offer_a_service')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Favorites')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.section}>♥  Saved listings</Text>
+          <Text style={styles.section}>{t('saved_listings')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>
@@ -155,7 +183,7 @@ export function ProfileScreen() {
       {!user?.kycVerified && (
         <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Kyc')}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.section}>✅  Verify your identity (KYC)</Text>
+            <Text style={styles.section}>{t('verify_identity')}</Text>
             <Text style={{ color: theme.colors.textMuted }}>›</Text>
           </View>
         </TouchableOpacity>
@@ -163,14 +191,14 @@ export function ProfileScreen() {
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Wanted')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.section}>🙋  Wanted requests nearby</Text>
+          <Text style={styles.section}>{t('wanted_requests')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => nav.navigate('Following')}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.section}>👥  Following</Text>
+          <Text style={styles.section}>{t('following_menu')}</Text>
           <Text style={{ color: theme.colors.textMuted }}>›</Text>
         </View>
       </TouchableOpacity>

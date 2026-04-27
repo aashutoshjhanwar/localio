@@ -50,6 +50,12 @@ import { SearchScreen } from '../screens/Search';
 import { ProfileScreen } from '../screens/Profile';
 import { OffersInboxScreen } from '../screens/OffersInbox';
 import { DealsScreen } from '../screens/Deals';
+import { GroupsScreen } from '../screens/Groups';
+import { GroupDetailScreen } from '../screens/GroupDetail';
+import { GroupMembersScreen } from '../screens/GroupMembers';
+import { SosScreen } from '../screens/Sos';
+import { SearchChatsScreen } from '../screens/SearchChats';
+import { MyTrustScreen } from '../screens/MyTrust';
 import { theme } from '../theme';
 import { useT } from '../i18n';
 
@@ -95,6 +101,12 @@ export type RootStackParamList = {
   Search: undefined;
   OffersInbox: undefined;
   Deals: undefined;
+  Groups: undefined;
+  GroupDetail: { id: string; title?: string };
+  GroupMembers: { id: string };
+  Sos: { groupId?: string } | undefined;
+  SearchChats: undefined;
+  MyTrust: undefined;
   Login: undefined;
 };
 
@@ -191,6 +203,16 @@ export function RootNav() {
           <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
           <Stack.Screen name="OffersInbox" component={OffersInboxScreen} options={{ title: 'Offers' }} />
           <Stack.Screen name="Deals" component={DealsScreen} options={{ title: 'Deals nearby' }} />
+          <Stack.Screen name="Groups" component={GroupsScreen} options={{ title: 'My groups' }} />
+          <Stack.Screen
+            name="GroupDetail"
+            component={GroupDetailScreen}
+            options={({ route }) => ({ title: (route.params as any)?.title ?? 'Group' })}
+          />
+          <Stack.Screen name="GroupMembers" component={GroupMembersScreen} options={{ title: 'Members' }} />
+          <Stack.Screen name="Sos" component={SosScreen} options={{ title: 'Send SOS', headerTintColor: '#DC2626' }} />
+          <Stack.Screen name="SearchChats" component={SearchChatsScreen} options={{ title: 'Search all chats' }} />
+          <Stack.Screen name="MyTrust" component={MyTrustScreen} options={{ title: 'Trust score' }} />
           <Stack.Screen name="CreateListing" component={CreateListingScreen} options={{ title: 'Sell something' }} />
           <Stack.Screen name="CreateService" component={CreateServiceScreen} options={{ title: 'Offer a service' }} />
           <Stack.Screen

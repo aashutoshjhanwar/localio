@@ -398,4 +398,77 @@ export const Api = {
   // devices (push)
   registerDevice: (token: string, platform: 'ios' | 'android' | 'web') =>
     api('/api/devices/register', { method: 'POST', body: JSON.stringify({ token, platform }) }),
+
+  // groups + channels
+  myGroups: () => api<{ groups: any[] }>('/api/groups/mine'),
+  group: (id: string) => api<{ group: any; membership: any }>(`/api/groups/${id}`),
+  joinGroup: (id: string) => api<{ ok: true }>(`/api/groups/${id}/join`, { method: 'POST' }),
+  leaveGroup: (id: string) => api<{ ok: true }>(`/api/groups/${id}/leave`, { method: 'POST' }),
+  groupMembers: (id: string) => api<{ members: any[] }>(`/api/groups/${id}/members`),
+  groupAnnouncements: (id: string) =>
+    api<{ announcements: any[] }>(`/api/groups/${id}/announcements`),
+  createAnnouncement: (id: string, body: { title: string; body: string }) =>
+    api<{ announcement: any }>(`/api/groups/${id}/announcements`, { method: 'POST', body: JSON.stringify(body) }),
+  setMemberRole: (groupId: string, userId: string, role: 'member' | 'admin') =>
+    api(`/api/groups/${groupId}/members/${userId}/role`, { method: 'POST', body: JSON.stringify({ role }) }),
+  kickMember: (groupId: string, userId: string) =>
+    api(`/api/groups/${groupId}/members/${userId}/kick`, { method: 'POST' }),
+  muteMember: (groupId: string, userId: string, hours: number) =>
+    api(`/api/groups/${groupId}/members/${userId}/mute`, { method: 'POST', body: JSON.stringify({ hours }) }),
+
+  groupChannels: (groupId: string) =>
+    api<{ channels: any[] }>(`/api/channels/group/${groupId}`),
+  channel: (id: string) =>
+    api<{ channel: any; messages: any[] }>(`/api/channels/${id}`),
+
+  // uploads
+  presignUpload: (body: { filename: string; contentType: string; size?: number }) =>
+    api<{
+      driver: 'local' | 's3';
+      uploadUrl: string | null;
+      publicUrl: string | null;
+      headers?: Record<string, string>;
+      fallback?: string;
+      key: string;
+      expiresAt?: string;
+    }>('/api/uploads/presign', { method: 'POST', body: JSON.stringify(body) }),
+  uploadBase64: (body: { filename: string; contentType: string; base64: string }) =>
+    api<{ url: string; key: string }>('/api/uploads', { method: 'POST', body: JSON.stringify(body) }),
+  deleteUpload: (key: string) =>
+    api<{ ok: true }>('/api/uploads', { method: 'DELETE', body: JSON.stringify({ key }) }),
+
+  // trust
+  myTrust: () => api<{ trust: { score: number; tier: any; components: any; suggestions: string[] } }>('/api/trust/me'),
+  userTrust: (userId: string) => api<{ trust: { score: number; tier: any; components: any } }>(`/api/trust/${userId}`),
+
+  // scam shield
+  assessText: (text: string) =>
+    api<{ assessment: { risk: 'clean' | 'low' | 'medium' | 'high'; flags: Array<{ kind: string; severity: string; reason: string; excerpt?: string }>; advice?: string } }>(
+      '/api/shield/assess', { method: 'POST', body: JSON.stringify({ text }) }
+    ),
+  gradeListing: (body: {
+    title: string; description: string; category: string; priceInPaise: number;
+    images: string[]; attributes?: Record<string, any> | null; lat: number; lng: number;
+  }) => api<{ report: {
+    score: number; grade: 'A' | 'B' | 'C' | 'D';
+    issues: Array<{ field: string; severity: 'info' | 'warn' | 'blocker'; message: string; pointsLost: number }>;
+    priceSuggestion?: { lowPaise: number; medianPaise: number; highPaise: number; sample: number };
+    canPublish: boolean;
+  } }>('/api/shield/grade-listing', { method: 'POST', body: JSON.stringify(body) }),
+
+  // global chat search
+  searchAllChats: (q: string) =>
+    api<{ results: Array<{
+      messageId: string; body: string; type: string; createdAt: string;
+      sender: { id: string; name: string | null; avatarUrl: string | null };
+      conversationId: string;
+      conversationType: string;
+      channel: { id: string; name: string; emoji: string | null; groupId: string } | null;
+      group: { id: string; name: string } | null;
+      peer: { id: string; name: string | null } | null;
+    }> }>(`/api/chat/search?q=${encodeURIComponent(q)}`),
+
+  // sos
+  sendSos: (body: { lat: number; lng: number; body: string; category?: 'medical' | 'security' | 'fire' | 'other'; radiusKm?: number }) =>
+    api<{ ok: true; reached: number; channelId?: string }>('/api/sos', { method: 'POST', body: JSON.stringify(body) }),
 };

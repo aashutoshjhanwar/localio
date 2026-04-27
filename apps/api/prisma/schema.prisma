@@ -137,25 +137,63 @@ model Group {
   id          String   @id @default(cuid())
   name        String
   description String?
-  societyId   String?
+  societyId   String?  @unique  // one group per society
   society     Society? @relation(fields: [societyId], references: [id])
   isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   members  GroupMember[]
-  conversation Conversation? // 1:1 optional link to a conversation for group chat
+  conversation Conversation? // legacy: default channel
+  channels Channel[]
+  announcements GroupAnnouncement[]
 }
 
 model GroupMember {
-  id       String   @id @default(cuid())
-  groupId  String
-  group    Group    @relation(fields: [groupId], references: [id])
-  userId   String
-  user     User     @relation(fields: [userId], references: [id])
-  role     String   @default("member") // member | admin | owner
-  joinedAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  groupId    String
+  group      Group     @relation(fields: [groupId], references: [id])
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  role       String    @default("member") // member | admin | owner
+  mutedUntil DateTime?
+  kickedAt   DateTime?
+  joinedAt   DateTime  @default(now())
 
   @@unique([groupId, userId])
+}
+
+// A topic channel inside a group (#buy-sell, #services, #sos, #lost-found, #events, #announcements, #general)
+model Channel {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  slug      String   // buy-sell | services | sos | lost-found | events | announcements | general | custom
+  name      String
+  kind      String   @default("general") // general | buy_sell | services | sos | lost_found | events | announcements
+  emoji     String?
+  readOnly  Boolean  @default(false) // announcements channel: only admins can post
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  conversationId String @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, slug])
+  @@index([groupId])
+}
+
+// Admin-only pinned announcement (separate from chat messages so it persists above the feed)
+model GroupAnnouncement {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  authorId  String
+  title     String
+  body      String
+  pinned    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([groupId, createdAt])
 }
 
 // ---------- LISTINGS (marketplace) ----------
@@ -314,10 +352,11 @@ model ServiceSlot {
 
 model Conversation {
   id        String   @id @default(cuid())
-  type      String   @default("direct") // direct | group | listing
+  type      String   @default("direct") // direct | group | listing | channel
   groupId   String?  @unique
   group     Group?   @relation(fields: [groupId], references: [id])
   listingId String?  // if chat is tied to a listing
+  channel   Channel?
   pinnedMessageId String?
   pinnedAt        DateTime?
   pinnedById      String?

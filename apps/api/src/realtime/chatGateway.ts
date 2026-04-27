@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
 import { prisma } from '../db/prisma.js';
 import { pushToUsers } from './push.js';
+import { assess } from '../services/scamShield.js';
 
 interface AuthedSocket extends Socket {
   userId?: string;
@@ -71,6 +72,26 @@ export function attachChatGateway(io: Server) {
           });
           if (!member) throw new Error('not_a_member');
 
+          // Channel-aware enforcement: mute + read-only
+          const ch = await prisma.channel.findUnique({
+            where: { conversationId },
+            select: { readOnly: true, groupId: true },
+          });
+          if (ch) {
+            const gm = await prisma.groupMember.findUnique({
+              where: { groupId_userId: { groupId: ch.groupId, userId: uid } },
+            });
+            if (gm?.kickedAt) throw new Error('kicked');
+            if (gm?.mutedUntil && new Date(gm.mutedUntil).getTime() > Date.now()) throw new Error('muted');
+            if (ch.readOnly && gm?.role !== 'admin' && gm?.role !== 'owner') throw new Error('read_only');
+          }
+
+          // Scam-shield: attach a risk assessment so the recipient sees a warning banner.
+          const shield = type === 'text' ? assess(body) : null;
+          const mergedMeta = payload.metadata
+            ? { ...(payload.metadata as any), ...(shield && shield.risk !== 'clean' ? { shield } : {}) }
+            : (shield && shield.risk !== 'clean' ? { shield } : null);
+
           const msg = await prisma.message.create({
             data: {
               conversationId,
@@ -78,7 +99,7 @@ export function attachChatGateway(io: Server) {
               type,
               body,
               mediaUrl: payload.mediaUrl,
-              metadata: payload.metadata ? JSON.stringify(payload.metadata) : null,
+              metadata: mergedMeta ? JSON.stringify(mergedMeta) : null,
               replyToId: payload.replyToId ?? null,
             },
             include: {

@@ -32,6 +32,7 @@ export function CreateListingScreen() {
   const [attributes, setAttributes] = useState<AttrMap>({});
   const [saving, setSaving] = useState(false);
   const [priceHint, setPriceHint] = useState<{ p25: number; p50: number; p75: number; sampleSize: number } | null>(null);
+  const [qualityReport, setQualityReport] = useState<any | null>(null);
   const [draftBanner, setDraftBanner] = useState<Draft | null>(null);
   const restoredRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,6 +43,22 @@ export function CreateListingScreen() {
     Api.priceHint(category, coords.lat, coords.lng).then((r) => { if (!cancelled) setPriceHint(r.hint); }).catch(() => {});
     return () => { cancelled = true; };
   }, [category, coords.lat, coords.lng]);
+
+  // Live listing quality coach — debounced to avoid spamming the API while typing.
+  useEffect(() => {
+    if (!coords.lat || title.length < 2) { setQualityReport(null); return; }
+    let cancelled = false;
+    const h = setTimeout(() => {
+      const priceNum = Number(price);
+      Api.gradeListing({
+        title, description: desc, category,
+        priceInPaise: (isFinite(priceNum) ? priceNum : 0) * 100,
+        images, attributes: attributes as any,
+        lat: coords.lat, lng: coords.lng,
+      }).then((r) => { if (!cancelled) setQualityReport(r.report); }).catch(() => {});
+    }, 600);
+    return () => { cancelled = true; clearTimeout(h); };
+  }, [title, desc, price, category, images, attributes, coords.lat, coords.lng]);
 
   useEffect(() => {
     Api.categories().then((r) => setCats(r.listings)).catch(() => {});
@@ -161,6 +178,30 @@ export function CreateListingScreen() {
               <Text style={styles.draftRestoreText}>Continue draft</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {qualityReport && (
+        <View style={[styles.quality, qualityReport.grade === 'A' && styles.qualityA, qualityReport.grade === 'B' && styles.qualityB, (qualityReport.grade === 'C' || qualityReport.grade === 'D') && styles.qualityLow]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.qualityGrade}>{qualityReport.grade}</Text>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.qualityTitle}>Listing quality · {qualityReport.score}/100</Text>
+              <Text style={styles.qualitySub}>
+                {qualityReport.grade === 'A' ? 'Excellent — this will rank high.' :
+                 qualityReport.grade === 'B' ? 'Good. A small fix would make it great.' :
+                 'Fix the items below to get more chats.'}
+              </Text>
+            </View>
+          </View>
+          {qualityReport.issues.slice(0, 5).map((it: any, i: number) => (
+            <View key={i} style={styles.issueRow}>
+              <Text style={styles.issueIcon}>
+                {it.severity === 'blocker' ? '🛑' : it.severity === 'warn' ? '⚠️' : '💡'}
+              </Text>
+              <Text style={styles.issueText}>{it.message}</Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -326,6 +367,16 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.accent ?? '#F5A623',
   },
   hintTitle: { fontWeight: '800', color: theme.colors.primaryDark, fontSize: 13 },
+  quality: { marginTop: 12, marginBottom: 4, padding: 12, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card },
+  qualityA: { borderColor: '#16A34A', backgroundColor: '#DCFCE7' },
+  qualityB: { borderColor: '#D97706', backgroundColor: '#FEF3C7' },
+  qualityLow: { borderColor: '#DC2626', backgroundColor: '#FEE2E2' },
+  qualityGrade: { fontSize: 38, fontWeight: '900', color: theme.colors.text, minWidth: 42, textAlign: 'center' },
+  qualityTitle: { fontWeight: '800', color: theme.colors.text, fontSize: 14 },
+  qualitySub: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
+  issueRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 6, gap: 6 },
+  issueIcon: { fontSize: 14, width: 18 },
+  issueText: { flex: 1, color: theme.colors.text, fontSize: 13, lineHeight: 18 },
   hintSub: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
   attrLabel: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' },
   attrChip: {

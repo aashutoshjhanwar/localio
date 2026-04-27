@@ -36,7 +36,12 @@ import { kycRouter } from './routes/kyc.js';
 import { meetupSpotRouter } from './routes/meetupSpots.js';
 import { storyRouter } from './routes/stories.js';
 import { quickReplyRouter } from './routes/quickReplies.js';
+import { channelRouter } from './routes/channels.js';
+import { sosRouter } from './routes/sos.js';
+import { trustRouter } from './routes/trust.js';
+import { shieldRouter } from './routes/shield.js';
 import { attachChatGateway } from './realtime/chatGateway.js';
+import { storage } from './storage/index.js';
 import path from 'path';
 
 const app = express();
@@ -77,6 +82,10 @@ app.use('/api/kyc', kycRouter);
 app.use('/api/meetup-spots', meetupSpotRouter);
 app.use('/api/stories', storyRouter);
 app.use('/api/quick-replies', quickReplyRouter);
+app.use('/api/channels', channelRouter);
+app.use('/api/sos', sosRouter);
+app.use('/api/trust', trustRouter);
+app.use('/api/shield', shieldRouter);
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.use(errorHandler);
@@ -92,4 +101,10 @@ attachChatGateway(io);
 server.listen(env.PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`🚀 LOCALIO api on :${env.PORT} (${env.NODE_ENV})`);
+  // eslint-disable-next-line no-console
+  console.log(`📦 storage driver: ${storage.kind}`);
+  if (storage.kind === 'local' && env.NODE_ENV === 'production') {
+    // eslint-disable-next-line no-console
+    console.warn('⚠️  WARNING: using local-disk storage in production. Files will be lost on redeploy. Set S3_BUCKET + S3_ACCESS_KEY + S3_SECRET_KEY to switch to S3/R2/MinIO.');
+  }
 });
